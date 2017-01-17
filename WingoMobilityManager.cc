@@ -14,8 +14,8 @@
 //*  	Module: Bonnmotion: a mobility scenario generation and analysis tool	*
 //*										*
 //*  	Version: 1.0								*
-//*  	Authors: Claudio Silva <claudio@ufpa.br>				*
-//*		 Denis do Rosário <denis@ufpa.br>				*
+//*  	Authors: Wellington Viana Lobato Junior				*
+//*		 				*
 //*										*
 //******************************************************************************/
 
