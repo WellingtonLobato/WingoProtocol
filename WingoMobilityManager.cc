@@ -14,12 +14,14 @@
 //*  	Module: Bonnmotion: a mobility scenario generation and analysis tool	*
 //*										*
 //*  	Version: 1.0								*
-//*  	Authors: Wellington Viana Lobato Junior				*
-//*		 				*
+//*  	Authors: Wellington Lobato Junior(wellington.lobato.junior@gmail.com)	*			*
+//*		 				                                *
 //*										*
 //******************************************************************************/
 
 #include "WingoMobilityManager.h"
+#include <time.h>//necessário p/ função time()
+#include <math.h>
 
 Define_Module(WingoMobilityManager);
 
@@ -380,6 +382,111 @@ void WingoMobilityManager::fromApplicationLayer(cMessage * msg) {
 	MobilityManagerMessage *rcvPackets = check_and_cast<MobilityManagerMessage*>(msg);
 	trace() << "WVL-Node received a msg";
 	switch (rcvPackets->getMobilePacketKind()) {
+            case PSO:{
+                //Case quebrado.... (-_-") Resultando na divisão de numeros por zero. Analisar o que está acontecendo.
+
+                //Variáveis do PSO
+                int maxIterations = 1000, iteration = 0, populacao = 40;
+                float posicao_individuo[2][populacao];
+                float velocidade_individuo[2][populacao];
+                float p_best[2][populacao];
+                float g_best[2];
+                float resultado_funcao[populacao];
+
+                trace() << "X_OLD: "<< rcvPackets->getXposLastHop();
+                trace() << "Y_OLD: "<< rcvPackets->getYposLastHop();
+
+                trace() << "X_NEW: "<< rcvPackets->getXposNextHop();
+                trace() << "Y_NEW: "<< rcvPackets->getYposNextHop();
+
+                //Iniciar valores aleatórios
+                srand(time(NULL));
+
+                //Iniciar as posições aleatórias para x e y.
+                for(int i=0;i<2;i++){
+                    for(int j=0;j<populacao;j++){
+                        //trace() << rcvPackets->getXposLastHop() + (rand() % ( rcvPackets->getXposNextHop() - rcvPackets->getXposLastHop() + 1 ) );
+                        //trace() << (rcvPackets->getXposLastHop() + 1) + (((float) rand()) / (float) RAND_MAX) * (rcvPackets->getXposNextHop() - (rcvPackets->getXposLastHop() + 1));
+                        p_best[0][j] = {(rcvPackets->getXposLastHop() + 1) + (((float) rand()) / (float) RAND_MAX) * (rcvPackets->getXposNextHop() - (rcvPackets->getXposLastHop() + 1))};
+                        p_best[1][j] = {0};
+
+                        posicao_individuo[0][j] = p_best[0][j]; //O primeiro melhor posicionamento do algoritmo de PSO
+                        posicao_individuo[1][j] = {0}; //Modificar depois WELL(Não usar por enquanto)
+                        //trace() << (rcvPackets->getYposLastHop() + 1) + (((float) rand()) / (float) RAND_MAX) * (rcvPackets->getYposNextHop() - (rcvPackets->getYposLastHop() + 1)); //Modificar depois WELL(Não usar por enquanto)
+
+                        velocidade_individuo[i][j] = {0};
+                        //trace() << velocidade_individuo[i][j];
+
+                    }
+                }
+
+                //Passar os valores pela função de ativação
+                for(int p=0;p<populacao;p++){
+                    resultado_funcao[p] = fitnessFunction(posicao_individuo[0][p], posicao_individuo[1][p], rcvPackets->getXposLastHop(), rcvPackets->getYposLastHop(), rcvPackets->getXposNextHop(), rcvPackets->getYposNextHop());
+                    //trace() << "Resultado da função PSO: " << resultado_funcao[p];
+                    //trace() << "X: " << posicao_individuo[0][p] << " Y:" << posicao_individuo[1][p];
+                }
+
+                //Ordenar o vetor
+                for(int i=1;i<populacao;i++){
+                    for(int j=0;j<(populacao-1);j++){
+                        if(resultado_funcao[j] > resultado_funcao[j+1]){
+                            float tempRes =  resultado_funcao[j];
+                            resultado_funcao[j] = resultado_funcao[j+1];
+                            resultado_funcao[j+1] = tempRes;
+
+                            float tempX = p_best[0][j];
+                            p_best[0][j] = p_best[0][j+1];
+                            p_best[0][j+1] = tempX;
+
+                            float tempY = p_best[1][j];
+                            p_best[1][j] = p_best[1][j+1];
+                            p_best[1][j+1] = tempY;
+
+                        }
+
+                    }
+                }
+
+                //Mostrar o resultado
+                trace() << "\n\n";
+                for(int p=0;p<populacao;p++){
+                    trace() << "Resultado da função PSO: " << resultado_funcao[p];
+                    trace() << "X: " << p_best[0][p] << " Y:" << p_best[1][p];
+                }
+                g_best[0] = p_best[0][0];
+                g_best[1] = p_best[1][0];
+
+                while(maxIterations > 0){
+                    for(int p=0;p<populacao;p++){
+                        //Obter o valor de p_best fitness(posicao_individuo[0][i], posicao_individuo[1][i]) < fitness(p_best[0][i], p_best[1][i])
+                        if(fitnessFunction(posicao_individuo[0][p], posicao_individuo[1][p], rcvPackets->getXposLastHop(), rcvPackets->getYposLastHop(), rcvPackets->getXposNextHop(), rcvPackets->getYposNextHop()) < fitnessFunction(p_best[0][p], p_best[1][p], rcvPackets->getXposLastHop(), rcvPackets->getYposLastHop(), rcvPackets->getXposNextHop(), rcvPackets->getYposNextHop())){
+                            p_best[0][p] = posicao_individuo[0][p];
+                            p_best[1][p] = posicao_individuo[1][p];
+                        }
+
+                        //Obter o valor de g_best fitness(p_best[0][i], p_best[1][i]) < fitness(g_best[0][0], g_best[0][1])
+                        if(fitnessFunction(p_best[0][p], p_best[1][p], rcvPackets->getXposLastHop(), rcvPackets->getYposLastHop(), rcvPackets->getXposNextHop(), rcvPackets->getYposNextHop()) < fitnessFunction(g_best[0], g_best[1], rcvPackets->getXposLastHop(), rcvPackets->getYposLastHop(), rcvPackets->getXposNextHop(), rcvPackets->getYposNextHop())){
+                            g_best[0] = p_best[0][p];
+                            g_best[1] = p_best[1][p];
+                        }
+                        //Calcular o PSO (atrito*velocidade[0][i] + const1*random.random()*(p_best[0][i] - posicao[0][i]) + const2*random.random()*(g_best[0][0] - posicao[0][i]))
+                        for(int pp=0;pp<populacao;pp++){
+                            velocidade_individuo[0][pp] = 0.7*velocidade_individuo[0][pp] + 1.47*rand()*(p_best[0][pp] - posicao_individuo[0][pp]) + 1.47*rand()*(g_best[0] - posicao_individuo[0][pp]);
+                            posicao_individuo[0][pp] = posicao_individuo[0][pp] + velocidade_individuo[0][pp];
+
+                            velocidade_individuo[1][pp] = 0.7*velocidade_individuo[1][pp] + 1.47*rand()*(p_best[1][pp] - posicao_individuo[1][pp]) + 1.47*rand()*(g_best[1] - posicao_individuo[1][pp]);
+                            posicao_individuo[1][pp] = posicao_individuo[1][pp] + velocidade_individuo[1][pp];
+                        }
+
+                    }
+                    maxIterations--;
+                    trace() << "Geração " << maxIterations << " GBest: X="<<g_best[0] << " Y=" << g_best[1];
+                }
+
+
+                break;
+            }
 	        case COLIGATE:{
 	            coligar = 1;
 
@@ -495,6 +602,31 @@ void WingoMobilityManager::fromApplicationLayer(cMessage * msg) {
     }else if(rcvPackets->getEvent() == 4){
         trace() << "WVL-Teoria dos jogos " << rcvPackets->getEvent();
     }*/
+}
+
+double WingoMobilityManager::fitnessFunction(double xNode, double yNode, double xLast, double yLast, double xNext, double yNext){
+    //Alterar função de Fitness
+    double dist1 = sqrt(pow(xNode - xLast, 2) + pow(yNode - yLast, 2));
+    double dist2 = sqrt(pow(xNode - xNext, 2) + pow(yNode - yNext, 2));
+    trace() << "OLHA " << dist1;
+    trace() << "OLHA " << dist2;
+    //dist1 = (dist1*0.5)/125.0;
+    //dist2 = (dist2*0.5)/125.0;
+    //double cxz = 1.0/(1.0+exp(10*(dist1-0.5)));
+
+    //double cxz = 1.0/(1.0+exp(0.1*(dist1-166.0)));
+    //double cyz = 1.0/(1.0+exp(0.1*(dist2-83.0)));
+
+    double cxz = 1.0/(1.0+exp(0.1*(dist1-166.0)));
+    double cyz = 1.0/(1.0+exp(0.1*(dist2-83.0)));
+
+    trace() << "LOOK!! cxz: " << cxz << " cyz: " << cyz;
+    //double cyz = 1.0/(1.0+exp(10*(dist2-0.5)));
+    double resultado_function = fabs(cxz-cyz);
+    //trace() << "OLHA " << resultado_function;
+    double PSO = 1.0/(1.0+exp(10*(resultado_function-(2.0/3.0))));
+    //double PSO = 1.0/(1.0+exp(0.1*(resultado_function-166)));
+    return PSO;
 }
 
 double WingoMobilityManager::calculateCO2emission(double speed, double acceleration) const{
