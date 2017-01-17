@@ -14,8 +14,8 @@
 //*  	Module: Bonnmotion: a mobility scenario generation and analysis tool	*
 //*										*
 //*  	Version: 1.0								*
-//*  	Authors: Claudio Silva <claudio@ufpa.br>				*
-//*		 Denis do Rosário <denis@ufpa.br>				*
+//*  	Authors: Wellington Lobato Junior (wellington.lobato.junior@gmail.com)	*
+//*		                                  				*
 //*										*
 //******************************************************************************/
 
@@ -100,6 +100,7 @@ class WingoMobilityManager: public VirtualMobilityManager {
 
 	double calculateCO2emission(double speed, double acceleration) const; //Calcula a emisao de CO2
 	double calculateFuelRate(double speed, double acceleration) const; //Calcula o gasto de combustivel
+	double fitnessFunction(double xNode, double yNode, double xLast, double yLast, double xNext, double yNext);
 
 	cMessage* traceMobility;
 	cMessage* targetPosition;
